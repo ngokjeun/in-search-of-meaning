@@ -75,7 +75,9 @@ function App() {
 
     return (
       <div className="container">
-        <h1 className="logo">in search of <span className="subtle-glimmer">meaning</span></h1>
+      <h1 className="App-header">
+        in search of <span class="subtle-glimmer">meaning</span>
+      </h1>
         <div className="flex-container">
           <form onSubmit={addQA} className="qa-form">
             <input type="text" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="enter question" />
@@ -105,9 +107,15 @@ function App() {
         </div>
       ))}
     </div>
+    
     <footer className="footer">
       <em>by ngok <a href="https://github.com/ngokjeun">github</a></em>
     </footer>
+    <div class="disclaimer-container">
+  <p class="disclaimer"><em>disclaimer:  AI did this.  seek truth elsewhere. <a href="https://en.wikipedia.org/wiki/Epistemology">ever heard of it?</a> all data publicly available.</em></p>
+</div>
+
+
   </div>
 );
 }
