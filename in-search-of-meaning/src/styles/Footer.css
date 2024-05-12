@@ -1,0 +1,20 @@
+.footer {
+    position: fixed;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    color: rgb(151, 151, 151);
+    text-align: center;
+    opacity: 0.9;
+}
+
+a {
+    color: #d5d5d5;
+    transition: color 0.3s ease;
+    text-decoration: none;
+}
+
+a:hover, a:focus {
+    color: #6a6a6a;
+    text-decoration: underline;
+}
