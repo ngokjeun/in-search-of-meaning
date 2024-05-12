@@ -6,8 +6,9 @@
     align-items: center;
     justify-content: center;
     font-size: calc(10px + 2vmin);
-    color: rgb(31, 31, 31);
+    color: white;
 }
+
 .App-logo {
     height: 40vmin;
     pointer-events: none;
@@ -20,4 +21,25 @@
 @keyframes App-logo-spin {
     from { transform: rotate(0deg); }
     to { transform: rotate(360deg); }
+}
+
+.subtle-glimmer {
+  cursor: pointer;
+  transition: color 5s ease-in-out;
+  color: #e0e0e0;
+}
+
+.subtle-glimmer:hover {
+  animation: textGlimmer 3s infinite alternate;
+}
+
+@keyframes textGlimmer {
+  0%, 100% {
+    color: #e0e0e0; 
+    text-shadow: none;
+  }
+  50% {
+    color: rgb(255, 232, 251); 
+    text-shadow: 0 0 2px #E0E0FF; 
+  }
 }
