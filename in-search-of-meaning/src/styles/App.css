@@ -5,11 +5,24 @@
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
-body {
+html, body {
+    height: 100%;
     background-color: #1f2335;
     color: #e0e0e0;
     line-height: 1.6;
-    padding: 20px;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+.app-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    transition: opacity 0.3s ease-in-out;
+    flex: 1;
 }
 
 .container {
@@ -20,4 +33,105 @@ body {
     background: #3b4261;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
     border-radius: 8px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    flex: 1;
+}
+
+.container.fade-in {
+    opacity: 1;
+}
+
+.landing-page {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    opacity: 1;
+    transition: opacity 0.3s ease;
+}
+
+.landing-page.fade-out {
+    opacity: 0;
+}
+
+.instruction-text {
+    font-size: 1em;
+    color: #65646e;
+    margin-top: 5px;
+    margin-bottom: 15px;
+    /* text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5); */
+}
+
+.category-buttons button {
+    background-color: #414868;
+    border: none;
+    color: #e0e0e0;
+    padding: 10px 20px;
+    margin: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.category-buttons button:hover {
+    background-color: #565f89;
+}
+
+.back-button {
+    background: transparent;
+    border: 2px solid #f6cff031;
+    color: #e0e0e0;
+    cursor: pointer;
+    font-size: 16px;
+    border-radius: 8px;
+    transition: background 0.3s, color 0.3s, border-color 0.3s;
+}
+
+.back-button:hover {
+    background: #414868;
+    color: #ffffff;
+    border-color: #414868;
+}
+
+.footer {
+    background-color: #1f2335;
+    text-align: center;
+    padding: 10px 0;
+    color: rgb(151, 151, 151);
+    opacity: 0.4;
+    flex-shrink: 0;
+}
+
+.footer a {
+    color: #d5d5d5;
+    transition: color 0.3s ease;
+    text-decoration: none;
+}
+
+.footer a:hover,
+.footer a:focus {
+    color: #6a6a6a;
+    text-decoration: underline;
+}
+
+.disclaimer-container {
+    margin-top: 30px;
+    margin-bottom: 30px;
+    text-align: center;
+}
+
+.disclaimer {
+    font-size: 0.8rem;
+    color: #aaa;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.footer.fade-in .disclaimer {
+    opacity: 1;
+}
+
+.footer.fade-out .disclaimer {
+    opacity: 0;
 }
