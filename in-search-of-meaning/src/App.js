@@ -15,6 +15,11 @@ function App() {
     const [searchTerm, setSearchTerm] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const fileInputRef = useRef(null);
+    const [selectedCategory, setSelectedCategory] = useState('');
+    
+    const handleCategoryClick = (category) => {
+      setSelectedCategory(category);
+    };
 
     const addQA = (e) => {
         e.preventDefault();
@@ -75,49 +80,56 @@ function App() {
 
     return (
       <div className="container">
-      <h1 className="App-header">
-        in search of <span class="subtle-glimmer">meaning</span>
-      </h1>
-        <div className="flex-container">
-          <form onSubmit={addQA} className="qa-form">
-            <input type="text" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="enter question" />
-            <input type="text" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="enter answer" />
-            <button type="submit">add q&a</button>
-          </form>
-      <div className="upload-section">
-          <label htmlFor="upload-file">upload csv (questions & answers): </label>
-          <div className="custom-file-upload">
-            <input type="file" accept=".csv" id="upload-file" onChange={handleFileUpload} ref={fileInputRef} style={{ display: 'none' }} /> {/* Hide the input */}
-            <button type="button" onClick={handleButtonClick}>choose file</button> {/* Add an onClick handler */}
+        <h1>Choose a category</h1>
+        <div className="category-buttons">
+          <button onClick={() => handleCategoryClick('cpf faq')}>CPF FAQ</button>
+          <button onClick={() => handleCategoryClick('diy')}>DIY</button>
+        </div>
+        {selectedCategory && (
+          <div className="container">
+            <h1 className="App-header">
+              in search of <span className="subtle-glimmer">meaning</span>
+            </h1>
+            <div className="flex-container">
+              <form onSubmit={addQA} className="qa-form">
+                <input type="text" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="enter question" />
+                <input type="text" value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="enter answer" />
+                <button type="submit">add q&a</button>
+              </form>
+              <div className="upload-section">
+                <label htmlFor="upload-file">upload csv (questions & answers): </label>
+                <div className="custom-file-upload">
+                  <input type="file" accept=".csv" id="upload-file" onChange={handleFileUpload} ref={fileInputRef} style={{ display: 'none' }} /> {/* Hide the input */}
+                  <button type="button" onClick={handleButtonClick}>choose file</button> {/* Add an onClick handler */}
+                </div>
+                {errorMessage && <p className="error-message">{errorMessage}</p>}
+              </div>
+            </div>
+            <div className="search-section">
+              <input type="text" placeholder="boring search :/" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
+            </div>
+            <div className="semantic-search-section">
+              <input type="text" placeholder="semantic search!" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
+            </div>
+            <div>
+              {filteredQaData.map((item, index) => (
+                <div key={index}>
+                  <h3 className="question-answer">{item.question}</h3>
+                  <p>{item.answer}</p>
+                </div>
+              ))}
+            </div>
           </div>
-          {errorMessage && <p className="error-message">{errorMessage}</p>}
+        )}
+        <footer className="footer">
+          <em>by ngok <a href="https://github.com/ngokjeun">github</a></em>
+        </footer>
+        <div className="disclaimer-container">
+          <p className="disclaimer"><em>disclaimer:  AI did this.  seek truth elsewhere. <a href="https://en.wikipedia.org/wiki/Epistemology">ever heard of it?</a> all data publicly available.</em></p>
         </div>
-    </div>
-    <div className="search-section">
-      <input type="text" placeholder="boring search :/" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
-    </div>
-    <div className="semantic-search-section">
-      <input type="text" placeholder="semantic search!" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
-    </div>
-    <div>
-      {filteredQaData.map((item, index) => (
-        <div key={index}>
-          <h3 className="question-answer">{item.question}</h3>
-          <p>{item.answer}</p>
-        </div>
-      ))}
-    </div>
-    
-    <footer className="footer">
-      <em>by ngok <a href="https://github.com/ngokjeun">github</a></em>
-    </footer>
-    <div class="disclaimer-container">
-  <p class="disclaimer"><em>disclaimer:  AI did this.  seek truth elsewhere. <a href="https://en.wikipedia.org/wiki/Epistemology">ever heard of it?</a> all data publicly available.</em></p>
-</div>
-
-
-  </div>
-);
+      </div>
+    );
 }
+
 
 export default App;
