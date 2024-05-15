@@ -1,41 +1,46 @@
-import os
-import pickle
-import time
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel
-from sentence_transformers import SentenceTransformer, util
-from pymongo import MongoClient
-import numpy as np
-import uvicorn
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
+from pymongo import MongoClient
+from pydantic import BaseModel
+import time
+from sentence_transformers import SentenceTransformer, util
+import numpy as np
+import pickle
+import os
 
-model = SentenceTransformer('all-MiniLM-L6-v2')
+app = FastAPI()
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods
+    allow_headers=["*"],  # Allows all headers
+)
 
 client = MongoClient('mongodb://localhost:27017/')
 db = client['semsearch']
 collection = db['cpf-faq']
 
-app = FastAPI()
+# Create text index if it doesn't exist
+collection.create_index([("question", "text"), ("answer", "text")])
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-    allow_credentials=True
-)
+# Define the model
+model = SentenceTransformer('all-MiniLM-L6-v2')
+
 
 def save_encodings(questions, filename='cache/encoded_questions.pkl'):
-    if not os.path.exists('cache'):
-        os.makedirs('cache')
     with open(filename, 'wb') as f:
         pickle.dump(questions, f)
+
 
 def load_encodings(filename='cache/encoded_questions.pkl'):
     if os.path.exists(filename):
         with open(filename, 'rb') as f:
             return pickle.load(f)
     return None
+
 
 class QueryRequest(BaseModel):
     query: str
@@ -107,16 +112,6 @@ def find_most_similar_questions(request: QueryRequest):
             "similarity_score": similarity,
             "answer": answers[question]
         })
-        print(f"query: {query}\n")
-        print(f"top {top_n} most similar questions found:")
-        for result in results:
-            print(f"\tquestion: {result['question']}")
-            print(f"\tsimilarity score: {result['similarity_score']:.4f}")
-            print(f"\tanswer: {result['answer']}\n")
-    print("\n")
-    print(f"\tDB time: {end_db_query - start_db_query:.4f} seconds")
-    print(f"\tencode time: {end_encoding - start_encoding:.4f} seconds")
-    print(f"\tcos time: {end_similarity - start_similarity:.4f} seconds")
 
     return {
         "query": query,
@@ -127,3 +122,21 @@ def find_most_similar_questions(request: QueryRequest):
             "similarity_calc_time": end_similarity - start_similarity
         }
     }
+
+
+@app.get("/search")
+def search(search_term: str = Query(None, min_length=1)):
+    results = collection.find({
+        "$text": {
+            "$search": search_term
+        }
+    }, {
+        "score": {"$meta": "textScore"}
+    }).sort([("score", {"$meta": "textScore"})])
+
+    return [{"question": result["question"], "answer": result["answer"]} for result in results]
+
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run("minilm_api:app", host="0.0.0.0", port=8000, reload=True)

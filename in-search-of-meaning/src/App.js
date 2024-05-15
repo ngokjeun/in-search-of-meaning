@@ -18,15 +18,17 @@ function App() {
     const [selectedCategory, setSelectedCategory] = useState('');
     const [isFading, setIsFading] = useState(false);
     
+    // Fetch Q&A pairs when the component mounts
+    useEffect(() => {
+        fetchQaData();
+    }, []);
+
     const handleCategoryClick = (category) => {
         setIsFading(true);
         setTimeout(() => {
             setSelectedCategory(category);
             setIsFading(false);
-            if (category === 'cpf faq') {
-                fetchQaData();
-            }
-        }, 300); 
+        }, 300);
     };
 
     const fetchQaData = async () => {
@@ -113,19 +115,19 @@ function App() {
         return () => clearTimeout(debounceTimeout);
     }, [semanticSearchTerm]);
 
-    const filteredQaData = searchTerm
-        ? qaData.filter(qa =>
-            qa.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            qa.answer.toLowerCase().includes(searchTerm.toLowerCase()))
-        : qaData;
-
     const handleBackToMenu = () => {
         setIsFading(true);
         setTimeout(() => {
             setSelectedCategory('');
             setIsFading(false);
-        }, 300); 
+        }, 300);
     };
+
+    // Filter Q&A data based on the search term using JavaScript's .includes() method
+    const filteredQaData = qaData.filter(qa =>
+        qa.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        qa.answer.toLowerCase().includes(searchTerm.toLowerCase())
+    );
 
     return (
         <div className="app-container">
@@ -160,7 +162,13 @@ function App() {
                         </div>
                     </div>
                     <div className="search-section">
-                        <input type="text" placeholder="boring search :/" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
+                        <input
+                            type="text"
+                            placeholder="boring search :/"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="search-input"
+                        />
                     </div>
                     <div className="semantic-search-section">
                         <input
