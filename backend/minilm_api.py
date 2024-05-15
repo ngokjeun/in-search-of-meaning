@@ -7,6 +7,7 @@ from sentence_transformers import SentenceTransformer, util
 from pymongo import MongoClient
 import numpy as np
 import uvicorn
+from fastapi.middleware.cors import CORSMiddleware
 
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
@@ -15,6 +16,14 @@ db = client['semsearch']
 collection = db['cpf-faq']
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+    allow_credentials=True
+)
 
 def save_encodings(questions, filename='cache/encoded_questions.pkl'):
     if not os.path.exists('cache'):
@@ -31,6 +40,18 @@ def load_encodings(filename='cache/encoded_questions.pkl'):
 class QueryRequest(BaseModel):
     query: str
     top_n: int = 3
+
+
+@app.get("/get_qa_data")
+def get_qa_data():
+    qa_data = []
+    for entry in collection.find():
+        question = entry.get("question")
+        answer = entry.get("answer")
+        if question and answer:
+            qa_data.append({"question": question, "answer": answer})
+    return qa_data
+
 
 @app.post("/find_most_similar_questions")
 def find_most_similar_questions(request: QueryRequest):

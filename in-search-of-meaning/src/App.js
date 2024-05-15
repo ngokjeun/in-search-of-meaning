@@ -1,5 +1,6 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Papa from 'papaparse';
+import axios from 'axios';
 import './styles/App.css';
 import './styles/Header.css';
 import './styles/Footer.css';
@@ -7,13 +8,11 @@ import './styles/Forms.css';
 import './styles/Footer.css'; // Import the footer styles
 
 function App() {
-    const [qaData, setQaData] = useState([
-        { question: 'What is React?', answer: 'A JavaScript library for building user interfaces.' },
-        { question: 'Why use MongoDB?', answer: 'It\'s a non-relational database that provides high performance and easy scalability.' },
-    ]);
+    const [qaData, setQaData] = useState([]);
     const [question, setQuestion] = useState('');
     const [answer, setAnswer] = useState('');
     const [searchTerm, setSearchTerm] = useState('');
+    const [semanticSearchTerm, setSemanticSearchTerm] = useState('');
     const [errorMessage, setErrorMessage] = useState('');
     const fileInputRef = useRef(null);
     const [selectedCategory, setSelectedCategory] = useState('');
@@ -24,7 +23,19 @@ function App() {
         setTimeout(() => {
             setSelectedCategory(category);
             setIsFading(false);
+            if (category === 'cpf faq') {
+                fetchQaData();
+            }
         }, 300); 
+    };
+
+    const fetchQaData = async () => {
+        try {
+            const response = await axios.get('http://localhost:8000/get_qa_data');
+            setQaData(response.data);
+        } catch (error) {
+            console.error('Error fetching data:', error);
+        }
     };
 
     const addQA = (e) => {
@@ -78,6 +89,30 @@ function App() {
         fileInputRef.current.click();
     };
 
+    const handleSemanticSearch = async () => {
+        if (semanticSearchTerm.trim() === '') return;
+        try {
+            const response = await axios.post('http://localhost:8000/find_most_similar_questions', {
+                query: semanticSearchTerm,
+                top_n: 5
+            });
+            setQaData(response.data.results.map(item => ({
+                question: item.question,
+                answer: item.answer
+            })));
+        } catch (error) {
+            console.error('Error performing semantic search:', error);
+        }
+    };
+
+    useEffect(() => {
+        const debounceTimeout = setTimeout(() => {
+            handleSemanticSearch();
+        }, 200);
+
+        return () => clearTimeout(debounceTimeout);
+    }, [semanticSearchTerm]);
+
     const filteredQaData = searchTerm
         ? qaData.filter(qa =>
             qa.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -128,7 +163,13 @@ function App() {
                         <input type="text" placeholder="boring search :/" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
                     </div>
                     <div className="semantic-search-section">
-                        <input type="text" placeholder="semantic search!" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="search-input" />
+                        <input
+                            type="text"
+                            placeholder="semantic search!"
+                            value={semanticSearchTerm}
+                            onChange={(e) => setSemanticSearchTerm(e.target.value)}
+                            className="search-input"
+                        />
                     </div>
                     <div>
                         {filteredQaData.map((item, index) => (
