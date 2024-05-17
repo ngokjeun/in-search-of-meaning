@@ -17,11 +17,14 @@ function App() {
     const fileInputRef = useRef(null);
     const [selectedCategory, setSelectedCategory] = useState('');
     const [isFading, setIsFading] = useState(false);
-    
-    // Fetch Q&A pairs when the component mounts
+
     useEffect(() => {
-        fetchQaData();
-    }, []);
+        if (selectedCategory === 'cpf faq') {
+            fetchQaData();
+        } else if (selectedCategory === 'diy') {
+            setQaData([]);
+        } 
+        }, [selectedCategory]);
 
     const handleCategoryClick = (category) => {
         setIsFading(true);
@@ -62,12 +65,10 @@ function App() {
                     if (data.length > 0) {
                         const validData = data.filter((item) => item.questions && item.answers);
 
-                        const formattedData = validData.map((item) => {
-                            return {
-                                question: item.questions,
-                                answer: item.answers,
-                            };
-                        });
+                        const formattedData = validData.map((item) => ({
+                            question: item.questions,
+                            answer: item.answers,
+                        }));
 
                         if (validData.length > 0) {
                             setQaData(formattedData);
@@ -123,7 +124,6 @@ function App() {
         }, 300);
     };
 
-    // Filter Q&A data based on the search term using JavaScript's .includes() method
     const filteredQaData = qaData.filter(qa =>
         qa.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
         qa.answer.toLowerCase().includes(searchTerm.toLowerCase())
@@ -146,6 +146,7 @@ function App() {
                     <h1 className="App-header">
                         in search of <span className="subtle-glimmer">meaning</span>
                     </h1>
+                    {selectedCategory !== 'cpf faq' && (
                     <div className="flex-container">
                         <form onSubmit={addQA} className="qa-form">
                             <input type="text" value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="enter question" />
@@ -161,6 +162,8 @@ function App() {
                             {errorMessage && <p className="error-message">{errorMessage}</p>}
                         </div>
                     </div>
+                )}
+
                     <div className="search-section">
                         <input
                             type="text"
