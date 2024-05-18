@@ -1,2 +1,10 @@
-fastapi
-uvicorn
+beautifulsoup4==4.12.3
+fastapi==0.111.0
+numpy==1.26.4
+pandas==2.2.2
+pydantic==2.7.1
+pymongo==4.7.2
+selenium==4.21.0
+sentence_transformers==2.7.0
+uvicorn==0.29.0
+webdriver_manager==4.0.1

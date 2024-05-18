@@ -1,27 +1,94 @@
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
+from datetime import timedelta
+from jose import JWTError
+import logging
 import time
-from sentence_transformers import SentenceTransformer, util
-import numpy as np
 import pickle
 import os
+import numpy as np
+from sentence_transformers import SentenceTransformer, util
+from auth import Authenticator
+from datetime import datetime
 
 app = FastAPI()
+auth = Authenticator()
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allows all origins
+    allow_origins=["*"],
     allow_credentials=True,
-    allow_methods=["*"],  # Allows all methods
-    allow_headers=["*"],  # Allows all headers
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
+# Setup MongoDB connection
 client = MongoClient('mongodb://localhost:27017/')
 db = client['semsearch']
+users_collection = db['users']
 collection = db['cpf-faq']
+
+# Setup logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+class UserRegister(BaseModel):
+    email: EmailStr
+    password: str
+
+@app.post("/register")
+def register(user: UserRegister):
+    logger.info("Received registration request for email: %s", user.email)
+    existing_user = users_collection.find_one({"email": user.email})
+    if existing_user:
+        logger.warning("Email already registered: %s", user.email)
+        raise HTTPException(status_code=400, detail="Email already registered")
+    
+    hashed_password = auth._get_hash(user.password)
+    logger.info("Hashed password for email: %s", user.email)
+    
+    user_data = {"email": user.email, "hashed_password": hashed_password}
+    result = users_collection.insert_one(user_data)
+    
+    if result.inserted_id:
+        logger.info("User registered successfully with email: %s", user.email)
+        return {"msg": "User registered successfully"}
+    else:
+        logger.error("Failed to register user with email: %s", user.email)
+        raise HTTPException(status_code=500, detail="Failed to register user")
+
+@app.post("/token")
+def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
+    user = users_collection.find_one({"email": form_data.username})
+    if not user or not auth._verify_password(form_data.password, user["hashed_password"]):
+        raise HTTPException(status_code=401, detail="Incorrect email or password")
+
+    access_token_expires = timedelta(minutes=30)
+    access_token = auth._create_access_token(data={"sub": form_data.username}, expires_delta=access_token_expires)
+    return {"access_token": access_token, "token_type": "bearer"}
+
+async def get_current_user(token: str = Depends(auth.oauth2_scheme)):
+    credentials_exception = HTTPException(
+        status_code=401,
+        detail="Could not validate credentials",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+    try:
+        payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise credentials_exception
+    except JWTError:
+        raise credentials_exception
+
+    user = users_collection.find_one({"email": username})
+    if user is None:
+        raise credentials_exception
+    return user
 
 # Create text index if it doesn't exist
 collection.create_index([("question", "text"), ("answer", "text")])
@@ -29,11 +96,9 @@ collection.create_index([("question", "text"), ("answer", "text")])
 # Define the model
 model = SentenceTransformer('all-MiniLM-L6-v2')
 
-
 def save_encodings(questions, filename='cache/encoded_questions.pkl'):
     with open(filename, 'wb') as f:
         pickle.dump(questions, f)
-
 
 def load_encodings(filename='cache/encoded_questions.pkl'):
     if os.path.exists(filename):
@@ -41,11 +106,9 @@ def load_encodings(filename='cache/encoded_questions.pkl'):
             return pickle.load(f)
     return None
 
-
 class QueryRequest(BaseModel):
     query: str
     top_n: int = 3
-
 
 @app.get("/get_qa_data")
 def get_qa_data():
@@ -56,7 +119,6 @@ def get_qa_data():
         if question and answer:
             qa_data.append({"question": question, "answer": answer})
     return qa_data
-
 
 @app.post("/find_most_similar_questions")
 def find_most_similar_questions(request: QueryRequest):
@@ -123,7 +185,6 @@ def find_most_similar_questions(request: QueryRequest):
         }
     }
 
-
 @app.get("/search")
 def search(search_term: str = Query(None, min_length=1)):
     results = collection.find({
@@ -136,7 +197,7 @@ def search(search_term: str = Query(None, min_length=1)):
 
     return [{"question": result["question"], "answer": result["answer"]} for result in results]
 
-
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
