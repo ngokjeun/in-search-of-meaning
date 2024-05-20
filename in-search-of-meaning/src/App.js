@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import Papa from 'papaparse';
 import axios from 'axios';
 import './styles/App.css';
@@ -8,6 +8,7 @@ import './styles/Forms.css';
 import './styles/Footer.css'; // Import the footer styles
 
 function App() {
+  const [originalQaData, setOriginalQaData] = useState([]);
   const [qaData, setQaData] = useState([]);
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState('');
@@ -35,11 +36,20 @@ function App() {
   };
 
   const fetchQaData = async () => {
-    try {
-      const response = await axios.get('http://localhost:8000/get_qa_data');
-      setQaData(response.data);
-    } catch (error) {
-      console.error('Error fetching data:', error);
+    const cachedData = localStorage.getItem('qaData');
+    if (cachedData) {
+      const data = JSON.parse(cachedData);
+      setOriginalQaData(data);
+      setQaData(data);
+    } else {
+      try {
+        const response = await axios.get('http://localhost:8000/get_qa_data');
+        setOriginalQaData(response.data);
+        setQaData(response.data);
+        localStorage.setItem('qaData', JSON.stringify(response.data));
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      }
     }
   };
 
@@ -47,7 +57,11 @@ function App() {
     e.preventDefault();
     if (question.trim() && answer.trim()) {
       const newQa = { question, answer };
-      setQaData([...qaData, newQa]);
+      const updatedQaData = [...qaData, newQa];
+      const updatedOriginalQaData = [...originalQaData, newQa];
+      setQaData(updatedQaData);
+      setOriginalQaData(updatedOriginalQaData);
+      localStorage.setItem('qaData', JSON.stringify(updatedOriginalQaData));
       setQuestion('');
       setAnswer('');
     } else {
@@ -72,6 +86,8 @@ function App() {
 
             if (validData.length > 0) {
               setQaData(formattedData);
+              setOriginalQaData(formattedData);
+              localStorage.setItem('qaData', JSON.stringify(formattedData));
               setErrorMessage('');
             } else {
               setErrorMessage('Invalid CSV: Missing questions or answers in some rows.');
@@ -92,7 +108,7 @@ function App() {
     fileInputRef.current.click();
   };
 
-  const handleSemanticSearch = async () => {
+  const handleSemanticSearch = useCallback(async () => {
     if (semanticSearchTerm.trim() === '') return;
     try {
       const response = await axios.post('http://localhost:8000/find_most_similar_questions', {
@@ -106,7 +122,7 @@ function App() {
     } catch (error) {
       console.error('Error performing semantic search:', error);
     }
-  };
+  }, [semanticSearchTerm]);
 
   useEffect(() => {
     const debounceTimeout = setTimeout(() => {
@@ -114,7 +130,7 @@ function App() {
     }, 200);
 
     return () => clearTimeout(debounceTimeout);
-  }, [semanticSearchTerm]);
+  }, [semanticSearchTerm, handleSemanticSearch]);
 
   const handleBackToMenu = () => {
     setIsFading(true);
@@ -124,10 +140,25 @@ function App() {
     }, 300);
   };
 
-  const filteredQaData = qaData.filter(qa =>
-    qa.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    qa.answer.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const performLocalSearch = useCallback((term) => {
+    return originalQaData.filter(qa =>
+      qa.question.toLowerCase().includes(term.toLowerCase()) ||
+      qa.answer.toLowerCase().includes(term.toLowerCase())
+    );
+  }, [originalQaData]);
+
+  const handleSearch = useCallback(() => {
+    const localResults = performLocalSearch(searchTerm);
+    setQaData(localResults);
+  }, [performLocalSearch, searchTerm]);
+
+  useEffect(() => {
+    const debounceTimeout = setTimeout(() => {
+      handleSearch();
+    }, 200);
+
+    return () => clearTimeout(debounceTimeout);
+  }, [searchTerm, handleSearch]);
 
   return (
     <div className="app-container">
@@ -183,7 +214,7 @@ function App() {
             />
           </div>
           <div>
-            {filteredQaData.map((item, index) => (
+            {qaData.map((item, index) => (
               <div key={index}>
                 <h3 className="question-answer">{item.question}</h3>
                 <p>{item.answer}</p>
