@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, Query
+from fastapi import FastAPI, HTTPException, Depends, Query, Form
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.middleware.cors import CORSMiddleware
 from pymongo import MongoClient
@@ -41,34 +41,34 @@ class UserRegister(BaseModel):
     password: str
 
 @app.post("/register")
-def register(user: UserRegister):
-    logger.info("Received registration request for email: %s", user.email)
-    existing_user = users_collection.find_one({"email": user.email})
+def register(email: str = Form(...), password: str = Form(...)):
+    logger.info("Received registration request for email: %s", email)
+    existing_user = users_collection.find_one({"email": email})
     if existing_user:
-        logger.warning("Email already registered: %s", user.email)
+        logger.warning("Email already registered: %s", email)
         raise HTTPException(status_code=400, detail="Email already registered")
     
-    hashed_password = auth._get_hash(user.password)
-    logger.info("Hashed password for email: %s", user.email)
+    hashed_password = auth._get_hash(password)
+    logger.info("Hashed password for email: %s", email)
     
-    user_data = {"email": user.email, "hashed_password": hashed_password}
+    user_data = {"email": email, "hashed_password": hashed_password}
     result = users_collection.insert_one(user_data)
     
     if result.inserted_id:
-        logger.info("User registered successfully with email: %s", user.email)
+        logger.info("User registered successfully with email: %s", email)
         return {"msg": "User registered successfully"}
     else:
-        logger.error("Failed to register user with email: %s", user.email)
+        logger.error("Failed to register user with email: %s", email)
         raise HTTPException(status_code=500, detail="Failed to register user")
 
 @app.post("/token")
-def login_for_access_token(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = users_collection.find_one({"email": form_data.username})
-    if not user or not auth._verify_password(form_data.password, user["hashed_password"]):
+def login_for_access_token(email: str = Form(...), password: str = Form(...)):
+    user = users_collection.find_one({"email": email})
+    if not user or not auth._verify_password(password, user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
     access_token_expires = timedelta(minutes=30)
-    access_token = auth._create_access_token(data={"sub": form_data.username}, expires_delta=access_token_expires)
+    access_token = auth._create_access_token(data={"sub": email}, expires_delta=access_token_expires)
     return {"access_token": access_token, "token_type": "bearer"}
 
 async def get_current_user(token: str = Depends(auth.oauth2_scheme)):
@@ -79,18 +79,17 @@ async def get_current_user(token: str = Depends(auth.oauth2_scheme)):
     )
     try:
         payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
-        username: str = payload.get("sub")
-        if username is None:
+        email: str = payload.get("sub")
+        if email is None:
             raise credentials_exception
     except JWTError:
         raise credentials_exception
 
-    user = users_collection.find_one({"email": username})
+    user = users_collection.find_one({"email": email})
     if user is None:
         raise credentials_exception
     return user
 
-# Create text index if it doesn't exist
 collection.create_index([("question", "text"), ("answer", "text")])
 
 # Define the model
