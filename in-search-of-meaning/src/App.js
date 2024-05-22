@@ -6,6 +6,7 @@ import './styles/Header.css';
 import './styles/Footer.css';
 import './styles/Forms.css';
 import './styles/Footer.css'; // Import the footer styles
+import './styles/Menu.css';
 
 function App() {
   const [originalQaData, setOriginalQaData] = useState([]);
@@ -18,6 +19,8 @@ function App() {
   const fileInputRef = useRef(null);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [isFading, setIsFading] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
 
   useEffect(() => {
     if (selectedCategory === 'cpf faq') {
@@ -160,8 +163,25 @@ function App() {
     return () => clearTimeout(debounceTimeout);
   }, [searchTerm, handleSearch]);
 
+  const toggleMenu = () => {
+    setMenuOpen(!menuOpen);
+  };
+
+  const signIn = () => {
+    alert('Sign In clicked');
+  };
   return (
     <div className="app-container">
+      <div className="hamburger-menu">
+        <div className="hamburger-icon" onClick={toggleMenu}>
+          <div></div>
+          <div></div>
+          <div></div>
+        </div>
+        <div id="menu" className={`menu-content ${menuOpen ? 'open' : ''}`}>
+          <a href="#" onClick={signIn}>Sign In</a>
+        </div>
+      </div>
       {!selectedCategory ? (
         <div className={`landing-page ${isFading ? 'fade-out' : ''}`}>
           <h1>in search of <span className="subtle-glimmer">meaning</span></h1>
