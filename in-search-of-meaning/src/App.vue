@@ -7,7 +7,7 @@
         <div></div>
       </div>
       <div id="menu" :class="['menu-content', { open: menuOpen }]">
-        <a href="#" @click="signIn">Sign In</a>
+<div class="app-container">        <sign-in @signIn="handleSignIn"></sign-in></div>
       </div>
     </div>
     <div v-if="!selectedCategory" :class="['landing-page', { 'fade-out': isFading }]">
@@ -74,8 +74,9 @@
 import Papa from 'papaparse';
 import axios from 'axios';
 import './styles/App.css';
+import SignIn from "./components/SignIn.vue";
 
-export default {
+const app = {
   data() {
     return {
       originalQaData: [],
@@ -90,7 +91,13 @@ export default {
       menuOpen: false,
     };
   },
+  components: {
+    SignIn,
+  },
   methods: {
+    handleSignIn(data) {
+      console.log('Signin data received:', data);
+    },
     handleCategoryClick(category) {
       this.isFading = true;
       setTimeout(() => {
@@ -236,4 +243,6 @@ export default {
     this.fetchQaData();
   }
 };
+
+export default app;
 </script>

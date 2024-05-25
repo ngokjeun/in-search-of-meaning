@@ -13,6 +13,8 @@ html, body {
 }
 
 body {
+  background: linear-gradient(to bottom, #003366, $1f2335);
+  color: #e0e0e0;
   display: flex;
   flex-direction: column;
 }
@@ -476,4 +478,24 @@ body {
   .landing-page h1 {
     font-size: 1.5rem;
   }
+}
+
+/* TODO: hide background here*/
+.menu-content { 
+  display: none;
+  position: fixed;
+  top: 60px;
+  right: 20px;
+  background-color: #292e42;
+  color: #e0e0e0;         
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  transition: transform 0.3s ease-in-out;
+  max-width: 200px;
+  transform: translateX(100%);
+  z-index: 99;
+}
+.menu-content.open {
+  display: block;
+  transform: translateX(0);
 }
